@@ -2,16 +2,37 @@
 
 End-to-end machine learning platform with a FastAPI backend, asynchronous Celery workers, MySQL persistence, and a React dashboard for dataset management, model training, and prediction serving.
 
-## Why This Project
+## 🚀 Overview
 
-PAaaS demonstrates a production-style ML workflow:
+PAaaS (Predictive Analytics as a Service) is a production-style machine learning platform that enables users to manage datasets, train models asynchronously, and deploy predictions through a scalable backend architecture.
 
-- Upload and version datasets.
-- Create ML problems (classification/regression).
-- Train models asynchronously.
-- Promote a model to production.
-- Run predictions and inspect outputs.
-- Monitor task events live from the UI.
+The system mimics real-world ML infrastructure used in industry, combining API services, background workers, and a full frontend dashboard.
+
+## 🎯 Real-World Relevance
+
+This project reflects how modern ML systems are built in production:
+
+- Decoupled API and training pipelines
+- Asynchronous task processing (Celery)
+- Model lifecycle management
+- Explainability integration (SHAP, LIME)
+- Scalable service architecture
+
+It demonstrates practical ML engineering beyond notebook-based workflows.
+
+## ⚙️ Key Engineering Challenges
+
+- Designing asynchronous ML training pipelines
+- Handling dataset versioning and schema inference
+- Managing model lifecycle and production promotion
+- Integrating explainability tools into prediction workflows
+- Ensuring consistency between API, workers, and database state
+
+## 🚧 Future Improvements
+
+- Implement full job orchestration API
+- Add role-based authentication and permissions
+- Improve monitoring and alerting for ML pipelines
 
 ## System Architecture
 
@@ -31,6 +52,26 @@ flowchart LR
 
     FL[Flower] -->|queue/task monitoring| R
 ```
+
+![System architecture](docs/structure.png)
+
+## Frontend Flow (Screenshots)
+
+### 1. Overview dashboard
+
+![Overview page](docs/overview_page.png)
+
+### 2. Models table and model lifecycle
+
+![Models table](docs/models_table.png)
+
+### 3. Training workflow
+
+![Train model flow](docs/train_model.png)
+
+### 4. Column analysis and profiling
+
+![Column analysis](docs/column_analysis.png)
 
 ## End-to-End Workflow
 
