@@ -1,0 +1,20 @@
+name: Docker Images CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "*" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker App image
+      run: docker build . --file DockerfileApi --tag jallius/fachpraktikum-api:$(date +%s)
+    - name: Build the Docker Worker image
+      run: docker build . --file DockerfileWorker --tag jallius/fachpraktikum-worker:$(date +%s)

@@ -1,0 +1,3 @@
+age,income,gender,notes,mixed_col
+34,55000.0,female,note_a,7
+48,62000.0,male,note_b,10

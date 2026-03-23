@@ -1,0 +1,163 @@
+DATASET_VERSIONS:
+{
+  "b1e8d0a4-0a9f-4a3a-912b-6c3f0a2c7f54": {
+    "dataset_version_id": "b1e8d0a4-0a9f-4a3a-912b-6c3f0a2c7f54",
+    "dataset_version_uri": "./testdata/test_dataset.csv",
+    "profile": {
+      "summary": { "n_rows": 20, "n_cols": 8, "missing_pct": 0.1312 },
+      "id_candidates": ["id", "signup_date"],
+      "exclude_suggestions": ["id", "signup_date"],
+      "leakage_columns": [],
+      "columns": {
+        "id": {
+          "dtype_raw": "int64",
+          "semantic_type": "numeric",
+          "cardinality": 20,
+          "cardinality_ratio": 1.0,
+          "missing_pct": 0.0,
+          "suggested_analysis": "",
+          "is_empty": false,
+          "is_constant": false,
+          "is_unique": true,
+          "exclude_for_analysis": true,
+          "min": 1,
+          "max": 20,
+          "mean": 10.5,
+          "std": 5.9161,
+          "exclusion_reason": "id_like"
+        },
+        "age": {
+          "dtype_raw": "int64",
+          "semantic_type": "numeric",
+          "cardinality": 16,
+          "cardinality_ratio": 0.8,
+          "missing_pct": 0.0,
+          "suggested_analysis": "regression",
+          "is_empty": false,
+          "is_constant": false,
+          "is_unique": false,
+          "exclude_for_analysis": false,
+          "min": 19,
+          "max": 69,
+          "mean": 41.25,
+          "std": 13.8749
+        },
+        "income": {
+          "dtype_raw": "float64",
+          "semantic_type": "numeric",
+          "cardinality": 3,
+          "cardinality_ratio": 0.2143,
+          "missing_pct": 0.3,
+          "suggested_analysis": "regression",
+          "is_empty": false,
+          "is_constant": false,
+          "is_unique": false,
+          "exclude_for_analysis": false,
+          "min": 40000.0,
+          "max": 70000.0,
+          "mean": 52857.1429,
+          "std": 11554.9333
+        },
+        "gender": {
+          "dtype_raw": "object",
+          "semantic_type": "categorical",
+          "cardinality": 3,
+          "cardinality_ratio": 0.2143,
+          "missing_pct": 0.3,
+          "suggested_analysis": "classification",
+          "is_empty": false,
+          "is_constant": false,
+          "is_unique": false,
+          "exclude_for_analysis": false,
+          "top": "7",
+          "top_freq_ratio": 0.5,
+          "coverage_top3": 1.0
+        },
+        "signup_date": {
+          "dtype_raw": "object",
+          "semantic_type": "categorical",
+          "cardinality": 20,
+          "cardinality_ratio": 1.0,
+          "missing_pct": 0.0,
+          "suggested_analysis": "",
+          "is_empty": false,
+          "is_constant": false,
+          "is_unique": true,
+          "exclude_for_analysis": true,
+          "exclusion_reason": "id_like"
+        },
+        "target": {
+          "dtype_raw": "int64",
+          "semantic_type": "numeric",
+          "cardinality": 2,
+          "cardinality_ratio": 0.1,
+          "missing_pct": 0.0,
+          "suggested_analysis": "classification",
+          "is_empty": false,
+          "is_constant": false,
+          "is_unique": false,
+          "exclude_for_analysis": false,
+          "min": 0,
+          "max": 1,
+          "mean": 0.65,
+          "std": 0.4894
+        },
+        "notes": {
+          "dtype_raw": "object",
+          "semantic_type": "categorical",
+          "cardinality": 3,
+          "cardinality_ratio": 0.2,
+          "missing_pct": 0.25,
+          "suggested_analysis": "classification",
+          "is_empty": false,
+          "is_constant": false,
+          "is_unique": false,
+          "exclude_for_analysis": false,
+          "top": "10",
+          "top_freq_ratio": 0.6667,
+          "coverage_top3": 1.0
+        },
+        "mixed_col": {
+          "dtype_raw": "object",
+          "semantic_type": "categorical",
+          "cardinality": 3,
+          "cardinality_ratio": 0.1875,
+          "missing_pct": 0.2,
+          "suggested_analysis": "classification",
+          "is_empty": false,
+          "is_constant": false,
+          "is_unique": false,
+          "exclude_for_analysis": false,
+          "top": "7",
+          "top_freq_ratio": 0.4375,
+          "coverage_top3": 1.0
+        }
+      }
+    },
+    "schema": {
+      "id": "int64",
+      "age": "int64",
+      "income": "float64",
+      "gender": "object",
+      "signup_date": "object",
+      "target": "int64",
+      "notes": "object",
+      "mixed_col": "object"
+    }
+  }
+}
+
+
+ML_PROBLEMS:
+{
+  "7f3c6b2a-4c1e-4f7b-bb59-3c9e5c1f0e8d": {
+    "problem_id": "7f3c6b2a-4c1e-4f7b-bb59-3c9e5c1f0e8d",
+    "dataset_version_id": "b1e8d0a4-0a9f-4a3a-912b-6c3f0a2c7f54",
+    "task": "classification",
+    "target": "target",
+    "feature_strategy": {},
+    "validation_strategy": "",
+    "schema_snapshot": {},
+    "created_at": "2024-03-14T10:23:45Z"
+  }
+}

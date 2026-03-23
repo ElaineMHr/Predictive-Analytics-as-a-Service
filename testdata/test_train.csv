@@ -1,0 +1,49 @@
+age,education_years,gender,occupation,hours_per_week,income
+22,12,Male,Sales,35,28000
+24,13,Female,Marketing,38,32000
+25,12,Male,Clerk,40,33000
+26,14,Female,Analyst,42,41000
+27,13,Male,Support,40,36000
+28,15,Female,Designer,41,48000
+29,13,Female,Teacher,38,42000
+30,16,Male,Engineer,45,65000
+31,14,Male,Technician,42,52000
+32,15,Female,HR,40,49000
+33,12,Male,Sales,44,47000
+34,16,Female,Scientist,45,72000
+35,14,Male,Administrator,40,51000
+36,15,Female,Consultant,46,68000
+37,13,Male,Supervisor,43,56000
+38,14,Male,Technician,42,54000
+39,16,Female,Engineer,45,75000
+40,18,Male,Manager,50,95000
+41,16,Female,Scientist,44,82000
+42,14,Male,Operations,45,60000
+43,15,Female,Project Manager,47,88000
+44,12,Male,Warehouse,40,43000
+45,16,Female,Engineer,46,78000
+46,14,Male,Administrator,42,62000
+47,17,Male,Senior Engineer,48,90000
+48,15,Female,Controller,45,86000
+49,18,Male,Director,50,110000
+50,14,Female,Operations,44,65000
+51,16,Male,Manager,48,98000
+52,13,Male,Logistics,42,58000
+53,17,Female,Senior Scientist,46,102000
+54,12,Male,Maintenance,40,45000
+55,16,Female,Senior HR,45,90000
+56,14,Male,Quality Assurance,43,63000
+57,18,Male,Executive,52,125000
+58,15,Female,Program Manager,47,95000
+59,13,Male,Support Lead,44,62000
+60,16,Female,Senior Consultant,46,98000
+61,12,Male,Operator,40,48000
+62,14,Female,Accounting,42,66000
+63,18,Male,VP Engineering,50,135000
+64,15,Female,Compliance,45,88000
+65,13,Male,Facilities,40,52000
+66,16,Female,Principal Engineer,48,120000
+67,14,Male,Technical Lead,46,97000
+68,18,Female,Chief Scientist,50,140000
+69,12,Male,Security,40,50000
+69,15,Female,Advisor,42,82000

@@ -1,0 +1,16 @@
+FROM python:3.13-slim
+WORKDIR /code
+COPY ./pyproject.toml /code/pyproject.toml
+RUN pip install --no-cache-dir --upgrade -e '/code[api]'
+COPY ./src/__init__.py /code/__init__.py
+COPY ./src/api /code/api
+COPY ./src/celery_handler /code/celery_handler
+COPY ./src/db /code/db
+COPY ./src/mlcore/__init__.py /code/mlcore/__init__.py
+COPY ./src/mlcore/profile/__init__.py /code/mlcore/profile/__init__.py
+COPY ./src/mlcore/profile /code/mlcore/profile
+COPY ./src/mlcore/presets /code/mlcore/presets
+COPY ./src/mlcore/io/__init__.py /code/mlcore/io/__init__.py
+COPY ./src/mlcore/io/data_reader.py /code/mlcore/io/data_reader.py
+RUN apt update -y ; apt install curl -y
+CMD ["fastapi", "run", "api/main.py", "--port", "80"]

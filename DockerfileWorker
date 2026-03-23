@@ -1,0 +1,14 @@
+FROM python:3.13-slim
+WORKDIR /code
+COPY ./pyproject.toml /code/pyproject.toml
+RUN pip install --no-cache-dir --upgrade -e '/code[worker]' 
+COPY ./src/__init__.py /code/__init__.py
+COPY ./src/celery_handler /code/celery_handler
+COPY ./src/db /code/db
+COPY ./src/mlcore /code/mlcore
+COPY ./src/worker /code/worker
+# TODO:  remove test data from release image
+COPY ./testdata /code/worker/testdata
+RUN apt update -y ; apt install curl -y
+WORKDIR /code/worker
+ENTRYPOINT ["celery", "-A", "tasks",  "worker", "--loglevel=info"]

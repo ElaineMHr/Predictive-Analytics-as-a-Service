@@ -1,0 +1,88 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: DockerfileFrontend
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: api:42000
+    restart: "unless-stopped"
+    depends_on:
+      - api
+  api:
+    build:
+      context: .
+      dockerfile: DockerfileApi
+    volumes:
+      - testdata:/code/worker/testdata
+    environment:
+      REDISSERVER: redis://redis_server:6379
+      DELAY_DB_CONN_ON_STARTUP: 5
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: "team1_db"
+      DB_USER: "team1_user"
+      DB_PASS: "team1_pass"
+      SEED_TEST_DATA: "false"
+      TEST_DB_NAME: "team1_db"
+      TEST_DATA_PATH: "/code/db/test_db.txt"
+      # C_FORCE_ROOT: "true"
+    links:
+      - "db:db"
+    ports:
+      - "42000:80"
+    restart: "unless-stopped"
+    depends_on:
+      - redis_server
+
+  worker:
+    build:
+      context: .
+      dockerfile: DockerfileWorker
+    volumes:
+      - model-data:/models
+      - testdata:/code/worker/testdata
+    environment:
+      REDISSERVER: redis://redis_server:6379
+      DB_HOST: db
+      MODEL_BASE_PATH: /models
+      # C_FORCE_ROOT: "true"
+    links:
+      - "db:db"
+    deploy:
+      mode: replicated
+      replicas: 3
+    restart: "unless-stopped"
+    depends_on:
+      - redis_server
+  redis_server:
+    image: redis
+
+  flower:
+    image: mher/flower
+    command:
+      ["celery", "--broker=redis://redis_server:6379", "flower", "--port=5555"]
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis_server
+
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: safe123
+      MYSQL_DATABASE: team1_db # auto-create DB
+      MYSQL_USER: team1_user # auto-create user
+      MYSQL_PASSWORD: team1_pass
+    ports:
+      - "3306:3306"
+      - "33060:33060"
+    volumes:
+      - db-data:/var/lib/mysql
+
+volumes:
+  db-data:
+  model-data:
+  testdata:

@@ -1,0 +1,26 @@
+metadata_preset = {
+        "problem_id": "",
+        "model_id": "",
+        "model_uri": "",
+        "model_name": "",
+        "task": "",
+        "target": "",
+        "preset": "",
+        "version": "",
+        "framework": "",
+        "algorithm": "",
+        "semantic_types": {
+            "categorical": [],
+            "numeric": [],
+            "boolean": [],
+            },
+        "train_mode": "",
+        "schema_snapshot": {
+            "X": {},
+            "y": {},
+            },
+        "random_seed": None,
+        "metrics": {},
+        "cross_validation": {},
+        "explanation": {},
+        }

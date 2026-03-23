@@ -1,0 +1,12 @@
+{
+  "7f3c6b2a-4c1e-4f7b-bb59-3c9e5c1f0e8d": {
+    "problem_id": "7f3c6b2a-4c1e-4f7b-bb59-3c9e5c1f0e8d",
+    "dataset_version_id": "b1e8d0a4-0a9f-4a3a-912b-6c3f0a2c7f54",
+    "task": "classification",
+    "target": "target",
+    "feature_strategy": {},
+    "validation_strategy": "",
+    "schema_snapshot": {},
+    "created_at": "2024-03-14T10:23:45Z"
+  }
+}

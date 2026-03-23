@@ -1,0 +1,40 @@
+@startuml
+!include <C4/C4_Container>
+
+skinparam actorStyle awesome
+skinparam containerStyle awesome
+skinparam defaultTextAlignment center
+skinparam maxMessageSize 300
+skinparam Shadowing true
+skinparam ParticipantPadding 50
+skinparam linetype ortho
+
+
+
+Actor "User" as User1
+Actor "User" as User2
+
+System_Boundary(c1, "Docker Environment") {
+  Container(App1, "App Node", "FastAPI Celery MySQLConn")
+  Container(App2, "App Node", "FastAPI Celery MySQLConn")
+
+  Container(Worker1, "Worker Node", "MLCore Celery MySQLConn")
+  Container(Worker2, "Worker Node", "MLCore Celery MySQLConn")
+
+  ContainerDb(MySQL, "MySQL", "MySQL", "")
+  ContainerQueue(Redis, "Redis", "Redis Celery")
+  Container(Flower, "Flower", "")
+
+}
+
+User1 -d-> App1: "HTTP"
+User2 -d-> App2: "HTTP"
+
+App1 <--> Redis: "Queue Celery Task"
+App2 <--> Redis: "Queue Celery Task"
+
+Worker1 <--> Redis: "Execute Celery Task"
+Worker2 <--> Redis: "Execute Celery Task"
+
+Redis --> Flower: "Monitoring"
+@enduml
