@@ -101,7 +101,16 @@ flowchart LR
 |- DockerfileApi
 |- DockerfileWorker
 |- DockerfileFrontend
-|- frontend/                 # React dashboard
+|- frontend/                 # React dashboard (Vite + TypeScript)
+|  |- src/
+|  |  |- components/         # UI and feature components
+|  |  |- pages/              # route-level pages
+|  |  |- layouts/            # dashboard shell/layout
+|  |  |- routes/             # router definitions
+|  |  |- lib/actions/        # API client/action layer
+|  |  |- hooks/              # frontend hooks
+|  |- public/                # static assets
+|  |- package.json
 |- src/
 |  |- api/                   # FastAPI routes
 |  |- worker/                # Celery tasks
