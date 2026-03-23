@@ -53,8 +53,6 @@ flowchart LR
     FL[Flower] -->|queue/task monitoring| R
 ```
 
-![System architecture](docs/structure.png)
-
 ## Frontend Flow (Screenshots)
 
 ### 1. Overview dashboard
@@ -85,15 +83,15 @@ flowchart LR
 
 ## Tech Stack
 
-| Layer | Technologies |
-| --- | --- |
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS, Radix UI, Recharts |
-| API | FastAPI, Pydantic |
-| Async Jobs | Celery, Redis, Flower |
-| Data/DB | MySQL 8, PyMySQL |
-| ML | scikit-learn, XGBoost, SHAP, LIME, pandas, numpy |
-| Packaging | `pyproject.toml`, editable installs |
-| CI | GitHub Actions (`pytest`, Docker image build) |
+| Layer      | Technologies                                                 |
+| ---------- | ------------------------------------------------------------ |
+| Frontend   | React 19, TypeScript, Vite, Tailwind CSS, Radix UI, Recharts |
+| API        | FastAPI, Pydantic                                            |
+| Async Jobs | Celery, Redis, Flower                                        |
+| Data/DB    | MySQL 8, PyMySQL                                             |
+| ML         | scikit-learn, XGBoost, SHAP, LIME, pandas, numpy             |
+| Packaging  | `pyproject.toml`, editable installs                          |
+| CI         | GitHub Actions (`pytest`, Docker image build)                |
 
 ## Repository Layout
 
