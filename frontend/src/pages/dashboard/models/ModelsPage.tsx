@@ -1,5 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
+import { useJobPolling } from "@/hooks/useJobPolling";
 import {
   delete_model,
   update_model,
@@ -24,6 +25,7 @@ import ModelsJoinedTable from "@/components/models/joined_table/ModelsJoinedTabl
 import NavBarBreadcrumb from "@/components/ui/NavBarBreadcrumb";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
+const PROGRESS_MODE = import.meta.env.VITE_PROGRESS_MODE ?? "sse";
 
 const ModelsPage = () => {
   const menu = [{ label: "Home", href: "/dashboard/" }];
@@ -40,6 +42,7 @@ const ModelsPage = () => {
 
   const [updateTarget, setUpdateTarget] = useState<UpdateTarget | null>(null);
   const [openUpdate, setOpenUpdate] = useState(false);
+  const [trainJobId, setTrainJobId] = useState<string | null>(null);
 
   const page = Number(searchParams.get("page") ?? 1);
   const size = Number(searchParams.get("size") ?? 20);
@@ -113,7 +116,9 @@ const ModelsPage = () => {
     loadModels();
   }, [loadModels]);
 
+  // SSE-based live updates (full mode only)
   useEffect(() => {
+    if (PROGRESS_MODE === "poll") return;
     const eventSource = new EventSource(`${API_URL}/events/stream`);
 
     const refreshOnTrain = (e: MessageEvent) => {
@@ -135,6 +140,26 @@ const ModelsPage = () => {
       eventSource.removeEventListener("job.failed", refreshOnTrain);
       eventSource.close();
     };
+  }, [loadModels]);
+
+  // Poll-based job tracking (portfolio mode only)
+  const onTrainComplete = useCallback(() => {
+    toast.success("Training finished successfully");
+    setTrainJobId(null);
+    loadModels();
+  }, [loadModels]);
+
+  const onTrainError = useCallback(() => {
+    toast.error("Training failed");
+    setTrainJobId(null);
+    loadModels();
+  }, [loadModels]);
+
+  useJobPolling(PROGRESS_MODE === "poll" ? trainJobId : null, onTrainComplete, onTrainError);
+
+  const onTrainCreate = useCallback(async (jobId?: string) => {
+    if (jobId) setTrainJobId(jobId);
+    await loadModels();
   }, [loadModels]);
 
   const askDelete = (id: string, name: string) => {
@@ -204,7 +229,7 @@ const ModelsPage = () => {
             <ModelsJoinedFilterbar />
           </div>
           <div className="flex gap-2">
-            <Train onCreate={loadModels} />
+            <Train onCreate={onTrainCreate} />
             <Predict onCreate={() => {}} />
           </div>
         </div>
@@ -266,7 +291,7 @@ const ModelsPage = () => {
                 Train a model to activate this page.
               </p>
               <div className="mt-5">
-                <Train onCreate={loadModels} />
+                <Train onCreate={onTrainCreate} />
               </div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useParams, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
+import { useJobPolling } from "@/hooks/useJobPolling";
 import {
   get_ml_problem,
   type MLProblem,
@@ -51,6 +52,7 @@ import MLPredictionsJoinedFilterbar from "@/components/ml_predictions/ml_predict
 import NavBarBreadcrumb from "@/components/ui/NavBarBreadcrumb";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
+const PROGRESS_MODE = import.meta.env.VITE_PROGRESS_MODE ?? "sse";
 
 export type FeatureStrategy = {
   include: string[];
@@ -123,6 +125,8 @@ const MLProblemDetailPage = () => {
   const [columnNames, setColumnNames] = useState<string[]>([]);
   const [hasAnyModels, setHasAnyModels] = useState(false);
   const [hasRunnableModel, setHasRunnableModel] = useState(false);
+  const [trainJobId, setTrainJobId] = useState<string | null>(null);
+  const [predictJobId, setPredictJobId] = useState<string | null>(null);
 
   const page = Number(searchParams.get("page") ?? 1);
   const size = Number(searchParams.get("size") ?? 20);
@@ -304,7 +308,9 @@ const MLProblemDetailPage = () => {
     setColumnNames(columnNames);
   }, [mlProblem, datasetVersion]);
 
+  // SSE-based live updates (full mode only)
   useEffect(() => {
+    if (PROGRESS_MODE === "poll") return;
     const eventSource = new EventSource(`${API_URL}/events/stream`);
 
     const refreshOnEvent = (e: MessageEvent) => {
@@ -343,6 +349,46 @@ const MLProblemDetailPage = () => {
       eventSource.close();
     };
   }, [loadModels, refreshHasAnyModels, loadPredictions, problemId]);
+
+  // Poll-based job tracking (portfolio mode only)
+  const onTrainComplete = useCallback(() => {
+    toast.success("Training finished successfully");
+    setTrainJobId(null);
+    refreshHasAnyModels();
+    loadModels();
+  }, [refreshHasAnyModels, loadModels]);
+
+  const onTrainError = useCallback(() => {
+    toast.error("Training failed");
+    setTrainJobId(null);
+    loadModels();
+  }, [loadModels]);
+
+  const onPredictComplete = useCallback(() => {
+    toast.success("Prediction finished successfully");
+    setPredictJobId(null);
+    loadPredictions();
+  }, [loadPredictions]);
+
+  const onPredictError = useCallback(() => {
+    toast.error("Prediction failed");
+    setPredictJobId(null);
+    loadPredictions();
+  }, [loadPredictions]);
+
+  useJobPolling(PROGRESS_MODE === "poll" ? trainJobId : null, onTrainComplete, onTrainError);
+  useJobPolling(PROGRESS_MODE === "poll" ? predictJobId : null, onPredictComplete, onPredictError);
+
+  const onTrainCreate = useCallback(async (jobId?: string) => {
+    if (jobId) setTrainJobId(jobId);
+    refreshHasAnyModels();
+    loadModels();
+  }, [refreshHasAnyModels, loadModels]);
+
+  const onPredictCreate = useCallback(async (jobId?: string) => {
+    if (jobId) setPredictJobId(jobId);
+    loadPredictions();
+  }, [loadPredictions]);
 
   const prodModel = models.find((model) => model.status === "production");
   const prodModelName = prodModel?.name;
@@ -531,9 +577,9 @@ const MLProblemDetailPage = () => {
                   <Train
                     problemId={problemId}
                     task={mlProblem.task}
-                    onCreate={loadModels}
+                    onCreate={onTrainCreate}
                   />
-                  <Predict problemId={problemId} onCreate={loadPredictions} />
+                  <Predict problemId={problemId} onCreate={onPredictCreate} />
                 </div>
               </div>
               {models.length > 0 || hasActiveFilters ? (
@@ -596,10 +642,7 @@ const MLProblemDetailPage = () => {
                       <Train
                         problemId={problemId}
                         task={mlProblem.task}
-                        onCreate={() => {
-                          refreshHasAnyModels();
-                          loadModels();
-                        }}
+                        onCreate={onTrainCreate}
                       />
                     </div>
                   </div>
@@ -634,7 +677,7 @@ const MLProblemDetailPage = () => {
                   <MLPredictionsJoinedFilterbar />
                 </div>
                 <div className="flex gap-2">
-                  <Predict problemId={problemId} onCreate={loadPredictions} />
+                  <Predict problemId={problemId} onCreate={onPredictCreate} />
                 </div>
               </div>
               {predictions.length > 0 || hasActiveFiltersPred ? (
@@ -696,7 +739,7 @@ const MLProblemDetailPage = () => {
                     <div className="mt-5">
                       <Predict
                         problemId={problemId}
-                        onCreate={loadPredictions}
+                        onCreate={onPredictCreate}
                       />
                     </div>
                   </div>

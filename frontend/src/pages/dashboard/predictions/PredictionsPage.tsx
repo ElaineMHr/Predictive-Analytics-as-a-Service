@@ -11,6 +11,7 @@ import {
   type PredictionJoined,
 } from "@/lib/actions/predictions/prediction.action";
 import { useState, useCallback, useEffect } from "react";
+import { useJobPolling } from "@/hooks/useJobPolling";
 import { PageSize, Pagination } from "@/components/table";
 import Loading from "@/components/loading/Loading";
 import { Fox } from "@/components/watermark/Fox";
@@ -26,6 +27,7 @@ import PredictionsJoinedTable from "@/components/predictions/joined_table/Predic
 import NavBarBreadcrumb from "@/components/ui/NavBarBreadcrumb";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
+const PROGRESS_MODE = import.meta.env.VITE_PROGRESS_MODE ?? "sse";
 
 const PredictionsPage = () => {
   const menu = [{ label: "Home", href: "/dashboard/" }];
@@ -42,6 +44,7 @@ const PredictionsPage = () => {
 
   const [updateTarget, setUpdateTarget] = useState<UpdateTarget | null>(null);
   const [openUpdate, setOpenUpdate] = useState(false);
+  const [predictJobId, setPredictJobId] = useState<string | null>(null);
 
   const page = Number(searchParams.get("page") ?? 1);
   const size = Number(searchParams.get("size") ?? 20);
@@ -103,7 +106,9 @@ const PredictionsPage = () => {
     loadPredictions();
   }, [loadPredictions]);
 
+  // SSE-based live updates (full mode only)
   useEffect(() => {
+    if (PROGRESS_MODE === "poll") return;
     const eventSource = new EventSource(`${API_URL}/events/stream`);
 
     const refreshOnPredict = (e: MessageEvent) => {
@@ -125,6 +130,26 @@ const PredictionsPage = () => {
       eventSource.removeEventListener("job.failed", refreshOnPredict);
       eventSource.close();
     };
+  }, [loadPredictions]);
+
+  // Poll-based job tracking (portfolio mode only)
+  const onPredictComplete = useCallback(() => {
+    toast.success("Prediction finished successfully");
+    setPredictJobId(null);
+    loadPredictions();
+  }, [loadPredictions]);
+
+  const onPredictError = useCallback(() => {
+    toast.error("Prediction failed");
+    setPredictJobId(null);
+    loadPredictions();
+  }, [loadPredictions]);
+
+  useJobPolling(PROGRESS_MODE === "poll" ? predictJobId : null, onPredictComplete, onPredictError);
+
+  const onPredictCreate = useCallback(async (jobId?: string) => {
+    if (jobId) setPredictJobId(jobId);
+    await loadPredictions();
   }, [loadPredictions]);
 
   const askDelete = (id: string, name: string) => {
@@ -197,7 +222,7 @@ const PredictionsPage = () => {
           <div className="relative">
             <PredictionsJoinedFilterbar />
           </div>
-          <Predict onCreate={loadPredictions} />
+          <Predict onCreate={onPredictCreate} />
         </div>
         {predictions.length > 0 || hasActiveFilters ? (
           <div>
@@ -257,7 +282,7 @@ const PredictionsPage = () => {
                 Run a prediction to activate this page.
               </p>
               <div className="mt-5">
-                <Predict onCreate={loadPredictions} />
+                <Predict onCreate={onPredictCreate} />
               </div>
             </div>
           </div>

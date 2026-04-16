@@ -35,7 +35,7 @@ import { get_presets_list } from "@/lib/actions/presets";
 type Props = {
   problemId?: string;
   task?: string;
-  onCreate: () => Promise<void> | void;
+  onCreate: (jobId?: string) => Promise<void> | void;
 };
 
 const Train = ({ problemId, task, onCreate }: Props) => {
@@ -91,7 +91,7 @@ const Train = ({ problemId, task, onCreate }: Props) => {
       return;
     }
     toast.success("Training started");
-    await onCreate();
+    await onCreate(res.job_id || undefined);
     setOpen(false);
     reset({
       problem_id: problemId ?? "",

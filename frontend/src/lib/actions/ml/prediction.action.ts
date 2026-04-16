@@ -5,7 +5,7 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
 
-type PredictResponse = { ok: true } | { ok: false; error: string };
+type PredictResponse = { ok: true; job_id: string } | { ok: false; error: string };
 
 export async function post_predict(req: unknown): Promise<PredictResponse> {
   const parsed = PredictFormSchema.safeParse(req);
@@ -39,7 +39,12 @@ export async function post_predict(req: unknown): Promise<PredictResponse> {
         error: `Prediction request failed (status ${res.status}).`,
       };
     }
-    return { ok: true };
+    let job_id = "";
+    try {
+      const json = await res.json();
+      job_id = json.job_id ?? "";
+    } catch { /* ignore parse errors */ }
+    return { ok: true, job_id };
   } catch {
     return { ok: false, error: "Network error while starting prediction." };
   }

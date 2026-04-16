@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 type Props = {
   problemId?: string;
   modelId?: string;
-  onCreate: () => Promise<void> | void;
+  onCreate: (jobId?: string) => Promise<void> | void;
 };
 
 type Mode = "new" | "existing" | "json";
@@ -80,7 +80,7 @@ const Predict = ({ problemId, modelId, onCreate }: Props) => {
       return;
     }
     toast.success("Prediction started");
-    await onCreate();
+    await onCreate(res.job_id || undefined);
     setOpen(false);
     reset({
       name: "",

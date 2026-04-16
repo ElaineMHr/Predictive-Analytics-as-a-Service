@@ -14,6 +14,7 @@ import {
   get_predictions,
 } from "@/lib/actions/predictions";
 import { useState, useCallback, useEffect } from "react";
+import { useJobPolling } from "@/hooks/useJobPolling";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageSize, Pagination } from "@/components/table";
 import Loading from "@/components/loading/Loading";
@@ -35,6 +36,7 @@ import PredictionUpdate from "@/components/predictions/PredictionUpdate";
 import NavBarBreadcrumb from "@/components/ui/NavBarBreadcrumb";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
+const PROGRESS_MODE = import.meta.env.VITE_PROGRESS_MODE ?? "sse";
 
 const ModelDetailPage = () => {
   const params = useParams<{
@@ -86,6 +88,7 @@ const ModelDetailPage = () => {
   const [openUpdate, setOpenUpdate] = useState(false);
   const [tabValue, setTabValue] = useState("predictions");
   const [mlProblem, setMLProblem] = useState<MLProblem | null>(null);
+  const [predictJobId, setPredictJobId] = useState<string | null>(null);
 
   const page = Number(searchParams.get("page") ?? 1);
   const size = Number(searchParams.get("size") ?? 20);
@@ -158,7 +161,9 @@ const ModelDetailPage = () => {
     loadPredictions();
   }, [loadPredictions]);
 
+  // SSE-based live updates (full mode only)
   useEffect(() => {
+    if (PROGRESS_MODE === "poll") return;
     const eventSource = new EventSource(`${API_URL}/events/stream`);
 
     const refreshOnPredict = (e: MessageEvent) => {
@@ -182,6 +187,26 @@ const ModelDetailPage = () => {
       eventSource.close();
     };
   }, [loadPredictions, modelId]);
+
+  // Poll-based job tracking (portfolio mode only)
+  const onPredictComplete = useCallback(() => {
+    toast.success("Prediction finished successfully");
+    setPredictJobId(null);
+    loadPredictions();
+  }, [loadPredictions]);
+
+  const onPredictError = useCallback(() => {
+    toast.error("Prediction failed");
+    setPredictJobId(null);
+    loadPredictions();
+  }, [loadPredictions]);
+
+  useJobPolling(PROGRESS_MODE === "poll" ? predictJobId : null, onPredictComplete, onPredictError);
+
+  const onPredictCreate = useCallback(async (jobId?: string) => {
+    if (jobId) setPredictJobId(jobId);
+    await loadPredictions();
+  }, [loadPredictions]);
 
   const askDelete = (id: string, name: string) => {
     setDeleteTarget({ id, name });
@@ -283,7 +308,7 @@ const ModelDetailPage = () => {
               <Predict
                 problemId={problemId}
                 modelId={modelId}
-                onCreate={loadPredictions}
+                onCreate={onPredictCreate}
               />
             </div>
             {predictions.length > 0 || hasActiveFilters ? (
@@ -344,7 +369,7 @@ const ModelDetailPage = () => {
                     <Predict
                       problemId={problemId}
                       modelId={modelId}
-                      onCreate={loadPredictions}
+                      onCreate={onPredictCreate}
                     />
                   </div>
                 </div>
