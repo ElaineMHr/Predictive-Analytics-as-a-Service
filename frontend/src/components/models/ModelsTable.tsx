@@ -13,6 +13,7 @@ import { SortableHeader } from "../table";
 import type { Model } from "@/lib/actions/models/model.action";
 import ModelRowActions from "./ModelRowActions";
 import ModelStatusBadge from "../ui/model-status-badge";
+import { safeParse } from "@/lib/utils";
 
 type Props = {
   models: Model[];
@@ -98,8 +99,8 @@ const ModelsTable = ({
               <TableCell>{m.algorithm}</TableCell>
               <TableCell>
                 {task === "classification"
-                  ? (round(JSON.parse(m.metrics_json)?.f1, 3) ?? "—")
-                  : (JSON.parse(m.metrics_json)?.rmse.toFixed(2) ?? "—")}
+                  ? (round(safeParse<{ f1?: number }>(m.metrics_json)?.f1, 3) ?? "—")
+                  : (safeParse<{ rmse?: number }>(m.metrics_json)?.rmse?.toFixed(2) ?? "—")}
               </TableCell>
               <TableCell>{m.train_mode}</TableCell>
               <TableCell>

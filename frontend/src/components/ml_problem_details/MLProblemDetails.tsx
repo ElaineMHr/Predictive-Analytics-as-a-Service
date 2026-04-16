@@ -21,6 +21,7 @@ import { Field, FieldError, FieldLabel } from "../ui/field";
 import Combobox from "../ui/combobox";
 import { toast } from "sonner";
 import Reset from "../ui/reset";
+import { safeParse } from "@/lib/utils";
 
 type Props = {
   datasetId: string;
@@ -53,7 +54,7 @@ const MLProblemDetails = ({
   const [openReset, setOpenReset] = useState(false);
   const [resetting, setResetting] = useState(false);
 
-  const semanticTypesJSON = JSON.parse(mlProblem.semantic_types);
+  const semanticTypesJSON = safeParse<Record<string, string[]>>(mlProblem.semantic_types) ?? {};
   const semanticTypes: [string, string[]][] = Object.entries(semanticTypesJSON);
 
   type IncludesForm = { columns: string[] };

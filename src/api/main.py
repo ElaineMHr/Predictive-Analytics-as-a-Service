@@ -396,7 +396,7 @@ async def post_problem(
 ):
     dataset_version = await get_dataset_version(dataset_version_id)
     raw_profile = dataset_version.get("profile_json")
-    profile = json.loads(raw_profile) if isinstance(raw_profile, str) and raw_profile else {}
+    profile = json.loads(raw_profile) if isinstance(raw_profile, str) else (raw_profile or {})
     uri = dataset_version.get("uri")
     if not uri:
         raise HTTPException(status_code=400, detail="Dataset version has no URI")
@@ -438,10 +438,11 @@ def update_feature_strategy(problem_id: str, feature_strategy_body: FeatureStrat
 
     raw_feature_strategy = problem.get("feature_strategy_json")
     feature_strategy = {}
-    if raw_feature_strategy:
-        feature_strategy = json.loads(raw_feature_strategy)
-        if feature_strategy == "auto":
-            feature_strategy = {}
+    if raw_feature_strategy and raw_feature_strategy != "auto":
+        if isinstance(raw_feature_strategy, dict):
+            feature_strategy = raw_feature_strategy
+        else:
+            feature_strategy = json.loads(raw_feature_strategy)
 
     if feature_strategy_body.include is not None:
         feature_strategy["include"] = feature_strategy_body.include

@@ -52,8 +52,11 @@ def train(
     #     target, {}).get("cardinality", 0) > 2
 
     feature_strategy_json = problem.get("feature_strategy_json", False)
-    if feature_strategy_json:
-        feature_strategy = json.loads(feature_strategy_json)
+    if feature_strategy_json and feature_strategy_json != "auto":
+        if isinstance(feature_strategy_json, dict):
+            feature_strategy = feature_strategy_json
+        else:
+            feature_strategy = json.loads(feature_strategy_json)
     else:
         feature_strategy = "auto"
 

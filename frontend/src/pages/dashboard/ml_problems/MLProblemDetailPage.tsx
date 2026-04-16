@@ -28,6 +28,7 @@ import {
   type DatasetVersion,
 } from "@/lib/actions/dataset_versions";
 import type { Profile } from "../dataset_versions/DatasetVersionDetailPage";
+import { safeParse } from "@/lib/utils";
 import Loading from "@/components/loading/Loading";
 import NotFound from "@/components/errors/not_found/NotFound";
 import { Fox } from "@/components/watermark/Fox";
@@ -245,6 +246,14 @@ const MLProblemDetailPage = () => {
     loadModels();
   }, [loadModels]);
 
+  // Auto-refresh models list while any model is still training
+  const hasTrainingModel = models.some((m) => m.status === "training");
+  useEffect(() => {
+    if (!hasTrainingModel) return;
+    const id = setInterval(loadModels, 3000);
+    return () => clearInterval(id);
+  }, [hasTrainingModel, loadModels]);
+
   const loadPredictions = useCallback(async () => {
     try {
       const data: MLPredictionAllListResponse = await get_ml_predictions_all(
@@ -283,10 +292,10 @@ const MLProblemDetailPage = () => {
   useEffect(() => {
     if (!mlProblem || !datasetVersion) return;
     const feature_strategy = mlProblem.feature_strategy_json
-      ? JSON.parse(mlProblem.feature_strategy_json)
+      ? safeParse<{ include?: string[]; exclude?: string[] }>(mlProblem.feature_strategy_json) ?? "auto"
       : "auto";
-    const profile: Profile = datasetVersion?.profile_json
-      ? JSON.parse(datasetVersion?.profile_json)
+    const profile: Profile | null = datasetVersion?.profile_json
+      ? safeParse<Profile>(datasetVersion.profile_json)
       : null;
     if (feature_strategy === "auto") {
       const exclude = Object.values(profile?.exclude_suggestions ?? {});
@@ -304,7 +313,7 @@ const MLProblemDetailPage = () => {
         exclude: exclude,
       });
     }
-    const columnNames = Object.keys(profile.columns);
+    const columnNames = Object.keys(profile?.columns ?? {});
     setColumnNames(columnNames);
   }, [mlProblem, datasetVersion]);
 

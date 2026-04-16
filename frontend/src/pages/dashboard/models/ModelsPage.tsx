@@ -116,6 +116,14 @@ const ModelsPage = () => {
     loadModels();
   }, [loadModels]);
 
+  // Auto-refresh models list while any model is still training
+  const hasTrainingModel = models.some((m) => m.status === "training");
+  useEffect(() => {
+    if (!hasTrainingModel) return;
+    const id = setInterval(loadModels, 3000);
+    return () => clearInterval(id);
+  }, [hasTrainingModel, loadModels]);
+
   // SSE-based live updates (full mode only)
   useEffect(() => {
     if (PROGRESS_MODE === "poll") return;

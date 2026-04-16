@@ -6,6 +6,7 @@ import { get_prediction, type Prediction } from "@/lib/actions/predictions";
 import PredictionTable from "@/components/prediction_details/PredicitonTable";
 import NotFound from "@/components/errors/not_found/NotFound";
 import NavBarBreadcrumb from "@/components/ui/NavBarBreadcrumb";
+import { safeParse } from "@/lib/utils";
 
 const PredictionDetailPage = () => {
   const params = useParams<{
@@ -81,8 +82,13 @@ const PredictionDetailPage = () => {
     loadPrediction();
   }, [loadPrediction]);
 
+  type OutputsJson = {
+    model_metadata: { target: string; task: string };
+    X: Array<Record<string, unknown>>;
+    y_pred: Array<unknown>;
+  };
   const outputs_json = prediction?.outputs_json
-    ? JSON.parse(prediction?.outputs_json)
+    ? safeParse<OutputsJson>(prediction.outputs_json)
     : null;
 
   const target = outputs_json?.model_metadata.target ?? "y_pred";
@@ -92,10 +98,10 @@ const PredictionDetailPage = () => {
   const rows: Record<string, unknown>[] =
     X?.length > 0
       ? X.map((row, i) => {
-          const raw = outputs_json.y_pred[i];
+          const raw = outputs_json!.y_pred[i];
 
           const pred =
-            outputs_json?.model_metadata.task === "regression" &&
+            outputs_json!.model_metadata.task === "regression" &&
             typeof raw === "number"
               ? raw.toFixed(2)
               : raw;

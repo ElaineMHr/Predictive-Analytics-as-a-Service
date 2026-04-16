@@ -13,6 +13,7 @@ import ModelActions from "./ModelActions";
 import { SortableHeader } from "@/components/table";
 import type { ModelJoined } from "@/lib/actions/models/model.action";
 import ModelStatusBadge from "@/components/ui/model-status-badge";
+import { safeParse } from "@/lib/utils";
 
 type Props = {
   models: ModelJoined[];
@@ -28,14 +29,14 @@ const ModelsJoinedTable = ({ models, askDelete, askUpdate }: Props) => {
 
   function safeMetric(metrics_json: string) {
     try {
-      const { f1, rmse } = JSON.parse(metrics_json || "{}");
+      const { f1, rmse } = safeParse<{ f1?: number; rmse?: number }>(metrics_json || "{}") ?? {};
 
       if (Number.isFinite(f1)) {
         return round(f1, 3);
       }
 
       if (Number.isFinite(rmse)) {
-        return rmse.toFixed(2);
+        return (rmse as number).toFixed(2);
       }
 
       return "";

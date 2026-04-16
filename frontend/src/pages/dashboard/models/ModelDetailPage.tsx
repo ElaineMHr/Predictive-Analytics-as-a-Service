@@ -34,6 +34,8 @@ import {
 import type { PredictionUpdateInput } from "@/components/predictions/prediction.schema";
 import PredictionUpdate from "@/components/predictions/PredictionUpdate";
 import NavBarBreadcrumb from "@/components/ui/NavBarBreadcrumb";
+import { safeParse } from "@/lib/utils";
+import type { ExplainabilitySummary } from "@/components/model_explainability/Explainability";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const PROGRESS_MODE = import.meta.env.VITE_PROGRESS_MODE ?? "sse";
@@ -129,12 +131,11 @@ const ModelDetailPage = () => {
     loadMLProblem();
   }, [problemId]);
 
-  const metadata = model?.metadata_json
-    ? JSON.parse(model?.metadata_json)
-    : null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const metadata = model?.metadata_json ? (safeParse(model.metadata_json) as any) : null;
 
   const explanation_summary = model?.explanation_json
-    ? JSON.parse(model?.explanation_json)
+    ? safeParse<ExplainabilitySummary>(model.explanation_json)
     : null;
 
   const loadPredictions = useCallback(async () => {
@@ -160,6 +161,14 @@ const ModelDetailPage = () => {
   useEffect(() => {
     loadPredictions();
   }, [loadPredictions]);
+
+  // Auto-refresh predictions list while any prediction is still running
+  const hasPredicting = predictions.some((p) => p.status === "predicting");
+  useEffect(() => {
+    if (!hasPredicting) return;
+    const id = setInterval(loadPredictions, 3000);
+    return () => clearInterval(id);
+  }, [hasPredicting, loadPredictions]);
 
   // SSE-based live updates (full mode only)
   useEffect(() => {

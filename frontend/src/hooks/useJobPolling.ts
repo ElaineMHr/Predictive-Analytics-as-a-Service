@@ -4,7 +4,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 /**
  * Polls GET /jobs/{jobId}/status every 2s until the job reaches
- * "complete" or "error". Only active when jobId is non-null.
+ * "completed" or "failed". Only active when jobId is non-null.
  *
  * onComplete and onError should be stable references (useCallback)
  * to avoid restarting the polling interval unnecessarily.
@@ -22,10 +22,10 @@ export function useJobPolling(
         const res = await fetch(`${API_URL}/jobs/${jobId}/status`);
         if (!res.ok) return;
         const data = await res.json();
-        if (data.status === "complete") {
+        if (data.status === "completed") {
           clearInterval(id);
           onComplete();
-        } else if (data.status === "error") {
+        } else if (data.status === "failed") {
           clearInterval(id);
           onError();
         }

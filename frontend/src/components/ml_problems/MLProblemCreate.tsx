@@ -34,6 +34,7 @@ import type {
   Profile,
 } from "@/pages/dashboard/dataset_versions/DatasetVersionDetailPage";
 import { create_ml_problem } from "@/lib/actions/mlProblems/mlProblem.action";
+import { safeParse } from "@/lib/utils";
 import {
   get_dataset_version,
   type DatasetVersion,
@@ -84,7 +85,7 @@ const MLProblemCreate = ({
   const profileDetails: ColumnDetails[] = useMemo(() => {
     if (!datasetVersion?.profile_json) return [];
     try {
-      const profile: Profile = JSON.parse(datasetVersion.profile_json);
+      const profile: Profile = safeParse<Profile>(datasetVersion.profile_json)!;
       const details = Object.entries(profile.columns).map(
         ([name, metadata]) => ({
           name: name,

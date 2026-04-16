@@ -30,6 +30,7 @@ import DatasetVersionDataTable from "@/components/dataset_version_data/DatasetVe
 import { toast } from "sonner";
 import type { MLProblemUpdateInput } from "@/components/ml_problems/ml_problem.schema";
 import NavBarBreadcrumb from "@/components/ui/NavBarBreadcrumb";
+import { safeParse } from "@/lib/utils";
 
 export type ColumnDetails = { name: string; analysis: string };
 export type Metadata = {
@@ -137,7 +138,7 @@ const DatasetVersionDetailPage = () => {
   useEffect(() => {
     if (!datasetVersion?.profile_json) return;
     try {
-      const profile: Profile = JSON.parse(datasetVersion.profile_json);
+      const profile: Profile = safeParse<Profile>(datasetVersion.profile_json)!;
       const details = Object.entries(profile.columns).map(
         ([name, metadata]) => ({
           name: name,
@@ -151,8 +152,8 @@ const DatasetVersionDetailPage = () => {
     }
   }, [datasetVersion]);
 
-  const profile: Profile = datasetVersion?.profile_json
-    ? JSON.parse(datasetVersion?.profile_json)
+  const profile: Profile | null = datasetVersion?.profile_json
+    ? safeParse<Profile>(datasetVersion.profile_json)
     : null;
 
   const loadMLProblems = useCallback(async () => {
