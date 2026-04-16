@@ -1,1 +1,1 @@
-web: PYTHONPATH=src uvicorn api.main:app --host 0.0.0.0 --port $PORT
+web: fastapi run src/api/main.py --port $PORT
