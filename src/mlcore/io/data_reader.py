@@ -1,5 +1,9 @@
+import io
+import logging
 import pandas as pd
 from typing import Tuple
+
+logger = logging.getLogger(__name__)
 
 
 def get_dataframe_from_csv(
@@ -7,13 +11,69 @@ def get_dataframe_from_csv(
 ) -> pd.DataFrame:
     if not uri:
         raise ValueError("No csv_uri was provided. Provide a csv_uri.")
-    
+
     try:
         df = pd.read_csv(uri)
         return df
     except Exception as e:
-        print(f"Failed to load csv: {e}")
+        logger.error("[DATASET] Failed to load CSV from URI '%s': %s", uri, e)
         raise
+
+
+def load_dataset_version_df(dataset_version: dict) -> pd.DataFrame:
+    """
+    Load the CSV for a dataset version into a DataFrame.
+
+    Resolution order:
+      1. DB-stored csv_content  (portfolio mode — no filesystem dependency)
+      2. uri / local file path  (legacy fallback for older rows or Docker mode)
+
+    Raises ValueError / FileNotFoundError with a clear message if neither source
+    is available or readable.  Never silently swallows exceptions.
+    """
+    version_id = dataset_version.get("id", "<unknown>")
+
+    csv_content = dataset_version.get("csv_content")
+    if csv_content:
+        logger.info("[DATASET] Loading from DB-stored content (version_id=%s)", version_id)
+        if not csv_content.strip():
+            raise ValueError(
+                f"Dataset version {version_id!r} has an empty csv_content field in the DB."
+            )
+        try:
+            return pd.read_csv(io.StringIO(csv_content))
+        except Exception as exc:
+            logger.error(
+                "[DATASET] Failed to parse DB-stored CSV content for version_id=%s: %s",
+                version_id, exc,
+            )
+            raise
+
+    uri = dataset_version.get("uri")
+    if uri:
+        logger.info(
+            "[DATASET] No DB content found — falling back to URI path '%s' (version_id=%s)",
+            uri, version_id,
+        )
+        try:
+            return pd.read_csv(uri)
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f"Dataset version {version_id!r}: file not found at URI '{uri}'. "
+                "This version was created before DB content storage was enabled and "
+                "the original file is no longer on disk."
+            )
+        except Exception as exc:
+            logger.error(
+                "[DATASET] Failed to load dataset from URI '%s' (version_id=%s): %s",
+                uri, version_id, exc,
+            )
+            raise
+
+    raise ValueError(
+        f"Dataset version {version_id!r} has neither csv_content nor a uri. "
+        "Cannot load the dataset. Re-upload the file to generate a new version."
+    )
 
 def _check_profile(profile):
     if not profile:

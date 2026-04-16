@@ -26,13 +26,19 @@ CREATE TABLE IF NOT EXISTS dataset_versions (
   name VARCHAR(255),
   dataset_id CHAR(36) NOT NULL,
   filename VARCHAR(255),
-  uri TEXT NOT NULL,
+  uri TEXT,
+  csv_content TEXT,
   schema_json JSONB,
   profile_json JSONB,
   row_count INT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (dataset_id) REFERENCES datasets(id)
 );
+
+-- Migration: add csv_content if upgrading from an older schema
+ALTER TABLE dataset_versions ADD COLUMN IF NOT EXISTS csv_content TEXT;
+-- Migration: uri is no longer required (content stored in DB for portfolio mode)
+ALTER TABLE dataset_versions ALTER COLUMN uri DROP NOT NULL;
 
 -- ==========================================
 -- ML PROBLEMS

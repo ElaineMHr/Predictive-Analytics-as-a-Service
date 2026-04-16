@@ -1,6 +1,6 @@
 from sklearn.pipeline import Pipeline
 from mlcore.io.preset_loader import loader
-from mlcore.io.data_reader import get_dataframe_from_csv, preprocess_dataframe, get_semantic_types
+from mlcore.io.data_reader import load_dataset_version_df, preprocess_dataframe, get_semantic_types
 from mlcore.io.model_saver import save_model
 from mlcore.io.metadata_saver import save_metadata
 from mlcore.profile.profiler import suggest_profile
@@ -41,8 +41,7 @@ def train(
     target = problem.get("target", False)
     dataset_version = db_get_dataset_version(dataset_version_id)
 
-    df = get_dataframe_from_csv(
-        dataset_version.get("uri", False))
+    df = load_dataset_version_df(dataset_version)
     raw_profile = dataset_version.get("profile_json")
     profile = json.loads(raw_profile) if isinstance(
         raw_profile, str) else raw_profile

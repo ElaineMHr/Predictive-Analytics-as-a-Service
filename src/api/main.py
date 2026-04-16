@@ -1,6 +1,4 @@
-import shutil
 import uuid
-import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI, File, Form, HTTPException, Request, Query, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
@@ -13,7 +11,7 @@ import time
 import os
 from pathlib import Path
 import pandas as pd
-from io import BytesIO
+from io import BytesIO, StringIO
 from pydantic import BaseModel
 
 try:
@@ -35,7 +33,9 @@ from db.db import (
     update_job_status, get_job,
 )
 from mlcore.profile.profiler import suggest_profile, suggest_schema
-from mlcore.io.data_reader import get_dataframe_from_csv, preprocess_dataframe, get_semantic_types
+from mlcore.io.data_reader import (
+    get_dataframe_from_csv, load_dataset_version_df, preprocess_dataframe, get_semantic_types,
+)
 from api.events import router as events_router
 
 logger = logging.getLogger(__name__)
@@ -65,10 +65,13 @@ _executor = ThreadPoolExecutor(max_workers=2)
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _check_storage_writable() -> None:
-    for path, name in [
-        (settings.MODEL_BASE_PATH, "MODEL_BASE_PATH"),
-        (settings.UPLOAD_DIR, "UPLOAD_DIR"),
-    ]:
+    # In portfolio mode uploads are stored in the DB, so only MODEL_BASE_PATH
+    # (where trained .joblib files land) needs to be writable on the filesystem.
+    paths_to_check = [(settings.MODEL_BASE_PATH, "MODEL_BASE_PATH")]
+    if not settings.is_portfolio:
+        paths_to_check.append((settings.UPLOAD_DIR, "UPLOAD_DIR"))
+
+    for path, name in paths_to_check:
         os.makedirs(path, exist_ok=True)
         try:
             test_file = os.path.join(path, ".write_test")
@@ -127,14 +130,17 @@ async def health_check():
         db_ok = False
         db_error = str(e)
 
+    storage_info: dict = {"models": settings.MODEL_BASE_PATH}
+    if settings.is_portfolio:
+        storage_info["uploads"] = "database"
+    else:
+        storage_info["uploads"] = settings.UPLOAD_DIR
+
     return {
         "status": "ok" if db_ok else "degraded",
         "mode": settings.APP_MODE,
         "database": "connected" if db_ok else f"error: {db_error}",
-        "storage": {
-            "models": settings.MODEL_BASE_PATH,
-            "uploads": settings.UPLOAD_DIR,
-        },
+        "storage": storage_info,
     }
 
 
@@ -245,23 +251,6 @@ async def delete_dataset_ep(dataset_id: str):
 # Dataset version endpoints
 # ──────────────────────────────────────────────────────────────────────────────
 
-UPLOAD_DIR = Path(settings.UPLOAD_DIR)
-
-def save_file(file: UploadFile):
-    if file.filename == "":
-        raise HTTPException(status_code=400, detail="No file selected")
-    if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=400, detail="File must be a CSV")
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    file_path = UPLOAD_DIR / f"{uuid.uuid4()}_{file.filename}"
-    try:
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        return str(file_path), file.filename
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save file: {e}")
-
-
 @app.post("/datasetVersion")
 async def post_dataset_version(
     dataset_id: str = Form(...),
@@ -271,20 +260,47 @@ async def post_dataset_version(
 ):
     if not file and not file_id:
         return {}
-    if file:
-        uri, filename = save_file(file)
-        if not uri:
-            return {}
     if file_id:
         return {}
 
-    df = get_dataframe_from_csv(uri)
+    if not file:
+        return {}
+
+    if file.filename == "":
+        raise HTTPException(status_code=400, detail="No file selected")
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="File must be a CSV")
+
+    raw_bytes = await file.read()
+    if not raw_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+    try:
+        csv_text = raw_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        try:
+            csv_text = raw_bytes.decode("latin-1")
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Could not decode CSV file: {exc}")
+
+    try:
+        df = pd.read_csv(StringIO(csv_text))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not parse CSV: {exc}")
+
     profile_json = suggest_profile(df)
     schema_json = suggest_schema(df)
 
+    # CSV content is stored in the DB — no filesystem dependency.
     dataset_version_id = create_dataset_version(
-        dataset_id=dataset_id, uri=uri, filename=filename, name=name,
-        schema_json=schema_json, profile_json=profile_json,
+        dataset_id=dataset_id,
+        name=name,
+        filename=file.filename,
+        uri=None,
+        csv_content=csv_text,
+        schema_json=schema_json,
+        profile_json=profile_json,
+        row_count=len(df),
     )
     return dataset_version_id
 
@@ -324,11 +340,11 @@ def reset_dataset_version_profile(version: str) -> bool:
     if not dataset_version:
         raise HTTPException(404, "Dataset version not found")
 
-    uri = dataset_version.get("uri")
-    if not uri:
-        raise HTTPException(404, "Dataset version URI not found")
+    try:
+        df = load_dataset_version_df(dataset_version)
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(404, str(exc))
 
-    df = get_dataframe_from_csv(uri)
     profile_json = suggest_profile(df)
     schema_json = suggest_schema(df)
     return update_dataset_version(version, profile_json=profile_json, schema_json=schema_json)
@@ -397,10 +413,10 @@ async def post_problem(
     dataset_version = await get_dataset_version(dataset_version_id)
     raw_profile = dataset_version.get("profile_json")
     profile = json.loads(raw_profile) if isinstance(raw_profile, str) else (raw_profile or {})
-    uri = dataset_version.get("uri")
-    if not uri:
-        raise HTTPException(status_code=400, detail="Dataset version has no URI")
-    df = get_dataframe_from_csv(uri)
+    try:
+        df = load_dataset_version_df(dataset_version)
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     X, y = preprocess_dataframe(df, target, profile)
     semantic_types = get_semantic_types(X, profile)
     ml_problem_id = create_ml_problem(

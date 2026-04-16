@@ -195,9 +195,10 @@ def update_dataset(dataset_id: str, name: Optional[str] = None, owner_id: Option
 
 def create_dataset_version(
     dataset_id: str,
-    uri: str,
-    name: str,
-    filename: str,
+    name: Optional[str] = None,
+    filename: Optional[str] = None,
+    uri: Optional[str] = None,
+    csv_content: Optional[str] = None,
     schema_json: Optional[dict] = None,
     profile_json: Optional[dict] = None,
     row_count: Optional[int] = None,
@@ -205,8 +206,8 @@ def create_dataset_version(
     version_id = str(uuid.uuid4())
     sql = """
         INSERT INTO dataset_versions
-        (id, name, dataset_id, filename, uri, schema_json, profile_json, row_count)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        (id, name, dataset_id, filename, uri, csv_content, schema_json, profile_json, row_count)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
     with cursor() as cur:
         cur.execute(
@@ -217,6 +218,7 @@ def create_dataset_version(
                 dataset_id,
                 filename,
                 uri,
+                csv_content,
                 _json_dump(schema_json),
                 _json_dump(profile_json),
                 row_count,
@@ -299,6 +301,7 @@ def update_dataset_version(
     name: Optional[str] = None,
     uri: Optional[str] = None,
     upload_id: Optional[str] = None,
+    csv_content: Optional[str] = None,
     schema_json: Optional[dict] = None,
     profile_json: Optional[dict] = None,
     row_count: Optional[int] = None,
@@ -311,6 +314,7 @@ def update_dataset_version(
             "name": name,
             "uri": uri,
             "upload_id": upload_id,
+            "csv_content": csv_content,
             "schema_json": _json_dump(schema_json) if schema_json is not None else None,
             "profile_json": _json_dump(profile_json) if profile_json is not None else None,
             "row_count": row_count,
