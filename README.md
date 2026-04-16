@@ -272,6 +272,22 @@ python -m pytest -q src/db/test_smoke.py -s
 - [Database README](src/db/README.md)
 - [ML I/O README](src/mlcore/io/README.md)
 
+## Storage behaviour in portfolio mode
+
+Dataset uploads and trained model files are stored on **local disk**
+(`UPLOAD_DIR` and `MODEL_BASE_PATH`). On free-tier hosting platforms
+(Render, Railway, Fly.io free tier), the container filesystem is
+**ephemeral** — files are lost when the service restarts or redeploys.
+
+This is expected and acceptable for the portfolio demo. It means:
+
+- Uploaded CSVs and trained `.joblib` model files will not persist across restarts.
+- Database records (datasets, problems, predictions) **are** persisted in PostgreSQL.
+- Re-uploading a dataset or re-training a model after a restart will work normally.
+
+For persistent file storage in a production setup, integrate an
+object store (S3, Cloudflare R2, Backblaze B2).
+
 ## Known Gaps
 
 - `jobs` API endpoints exist but are currently placeholders.
