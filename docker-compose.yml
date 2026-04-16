@@ -3,10 +3,11 @@ services:
     build:
       context: .
       dockerfile: DockerfileFrontend
+      args:
+        VITE_API_URL: http://localhost:42000
+        VITE_PROGRESS_MODE: poll
     ports:
       - "3000:3000"
-    environment:
-      VITE_API_URL: http://localhost:42000
     restart: "unless-stopped"
     depends_on:
       - api
@@ -14,7 +15,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: DockerfileApi
+      dockerfile: Dockerfile
     volumes:
       - uploads:/tmp/uploads
       - models:/tmp/models
