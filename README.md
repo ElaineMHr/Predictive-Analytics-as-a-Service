@@ -34,6 +34,24 @@ It demonstrates practical ML engineering beyond notebook-based workflows.
 - Add role-based authentication and permissions
 - Improve monitoring and alerting for ML pipelines
 
+## 🌐 Live Demo (Deployed Version)
+
+A simplified version of PAaaS is deployed on Vercel (frontend) and Render (backend + PostgreSQL). It is intentionally stripped down to fit within free-tier constraints, so there are a few things worth knowing before using it.
+
+**Expect some latency.** Render's free tier spins down idle web services after a period of inactivity. The first request after the service has been idle can take 30–60 seconds while the instance cold-starts. Subsequent requests are usually much faster.
+
+**Training is slower than in the full version.** In the full architecture, training is handled by a pool of dedicated Celery workers running in parallel processes. In the deployed demo version, there are no separate workers — the API runs training directly in a background thread within the same service. This means training shares CPU resources with the web server, so long-running jobs can be slower than they would be in the full setup.
+
+**There is no real-time push.** The full version streams training progress to the browser over a live connection using Server-Sent Events (SSE) via Redis pub/sub. The deployed version does not use Redis, so the frontend falls back to polling the server every two seconds instead. Progress updates therefore appear in small steps rather than continuously.
+
+**Uploaded datasets are stored in the database.** Free-tier hosting platforms use ephemeral container filesystems, so files written to disk may disappear when the service restarts or redeploys. To work around this, uploaded CSV files are stored as text directly in PostgreSQL instead of on disk. This allows datasets to survive restarts. For large files this would not be ideal, but for demo-scale datasets it is acceptable.
+
+**Trained models do not survive restarts.** Model files (`.joblib`) are still written to the container's temporary filesystem. If the Render instance restarts, previously trained models can no longer be loaded for prediction. In that case, the model must be trained again to generate a fresh artifact.
+
+**Please clean up after testing.** The demo runs on a shared database with limited storage. If you upload your own dataset, please delete it afterwards using the delete option in the dataset list to keep the demo usable for others.
+
+---
+
 ## System Architecture
 
 ```mermaid
