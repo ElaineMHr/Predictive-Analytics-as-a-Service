@@ -1,12 +1,19 @@
 import os
-from celery import Celery
 
+try:
+    from config import settings
+except ImportError:
+    from src.config import settings
 
-CELERY_BROKER_URL = os.getenv("REDISSERVER", "redis://redis_server:6379")
-CELERY_RESULT_BACKEND = os.getenv("REDISSERVER", "redis://redis_server:6379")
+CELERY_BROKER_URL = settings.REDISSERVER
+CELERY_RESULT_BACKEND = settings.REDISSERVER
 
-celery_app = Celery(
-    "celery",
-    backend=CELERY_BROKER_URL,
-    broker=CELERY_RESULT_BACKEND,
-)
+if settings.is_portfolio:
+    celery_app = None
+else:
+    from celery import Celery
+    celery_app = Celery(
+        "celery",
+        backend=CELERY_RESULT_BACKEND,
+        broker=CELERY_BROKER_URL,
+    )
