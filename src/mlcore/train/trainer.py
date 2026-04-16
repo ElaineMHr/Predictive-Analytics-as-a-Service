@@ -18,8 +18,9 @@ from pathlib import Path
 import logging
 logger = logging.getLogger(__name__)
 
+from mlcore.presets import presets_path
+
 BASE_DIR = "./testdata/models"
-PRESET_DIR = "/code/mlcore/presets"
 NAME = None
 
 def train(
@@ -33,7 +34,7 @@ def train(
     explain: bool = True,
     test_size_ratio: float = 0.2,
     random_seed: int = 42,
-    preset_dir: str = PRESET_DIR,
+    preset_dir: str = presets_path,
 ) -> Tuple[str, str]:
 
     problem = get_ml_problem(problem_id)
