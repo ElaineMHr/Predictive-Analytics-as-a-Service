@@ -3,7 +3,7 @@ import {
   type PredictFormInput,
 } from "@/components/ml/predict/predictForm.schema";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 type PredictResponse = { ok: true; job_id: string } | { ok: false; error: string };
 

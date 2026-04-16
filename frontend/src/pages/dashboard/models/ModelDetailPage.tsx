@@ -35,7 +35,7 @@ import type { PredictionUpdateInput } from "@/components/predictions/prediction.
 import PredictionUpdate from "@/components/predictions/PredictionUpdate";
 import NavBarBreadcrumb from "@/components/ui/NavBarBreadcrumb";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
+const API_URL = import.meta.env.VITE_API_URL;
 const PROGRESS_MODE = import.meta.env.VITE_PROGRESS_MODE ?? "sse";
 
 const ModelDetailPage = () => {

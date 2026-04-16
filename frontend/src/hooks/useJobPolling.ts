@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 /**
  * Polls GET /jobs/{jobId}/status every 2s until the job reaches

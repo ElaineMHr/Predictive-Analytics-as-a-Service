@@ -24,7 +24,7 @@ import ModelsJoinedFilterbar from "@/components/models/joined_table/ModelsJoined
 import ModelsJoinedTable from "@/components/models/joined_table/ModelsJoinedTable";
 import NavBarBreadcrumb from "@/components/ui/NavBarBreadcrumb";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
+const API_URL = import.meta.env.VITE_API_URL;
 const PROGRESS_MODE = import.meta.env.VITE_PROGRESS_MODE ?? "sse";
 
 const ModelsPage = () => {

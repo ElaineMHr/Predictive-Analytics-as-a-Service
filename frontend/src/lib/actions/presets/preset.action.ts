@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export async function get_presets_list(task: string): Promise<string[]> {
   const res = await fetch(`${API_URL}/presets/${task}`);

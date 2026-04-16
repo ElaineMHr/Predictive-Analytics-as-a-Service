@@ -4,7 +4,7 @@ import {
   type MLProblemUpdateInput,
 } from "@/components/ml_problems/ml_problem.schema";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export type MLProblem = {
   id: string;

@@ -3,7 +3,7 @@ import {
   type TrainFormInput,
 } from "@/components/ml/train/trainForm.schema";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 type TrainResponse = { ok: true; job_id: string } | { ok: false; error: string };
 

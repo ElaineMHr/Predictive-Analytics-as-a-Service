@@ -3,7 +3,7 @@ import {
   type PredictionUpdateInput,
 } from "@/components/predictions/prediction.schema";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export type Prediction = {
   id: string;

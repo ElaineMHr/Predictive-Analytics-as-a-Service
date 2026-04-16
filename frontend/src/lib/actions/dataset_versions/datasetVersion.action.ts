@@ -7,7 +7,7 @@ import {
   type DatasetVersionUpdateInput,
 } from "@/components/dataset_versions/datasetVersion.schema";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:42000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export type DatasetVersion = {
   id: string;
