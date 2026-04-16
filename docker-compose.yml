@@ -6,83 +6,86 @@ services:
     ports:
       - "3000:3000"
     environment:
-      VITE_API_URL: api:42000
+      VITE_API_URL: http://localhost:42000
     restart: "unless-stopped"
     depends_on:
       - api
+
   api:
     build:
       context: .
       dockerfile: DockerfileApi
     volumes:
-      - testdata:/code/worker/testdata
+      - uploads:/tmp/uploads
+      - models:/tmp/models
     environment:
-      REDISSERVER: redis://redis_server:6379
-      DELAY_DB_CONN_ON_STARTUP: 5
-      DB_HOST: db
-      DB_PORT: "3306"
-      DB_NAME: "team1_db"
-      DB_USER: "team1_user"
-      DB_PASS: "team1_pass"
+      APP_MODE: portfolio
+      DATABASE_URL: postgresql://dev:dev@postgres:5432/paas_dev
+      MODEL_BASE_PATH: /tmp/models
+      UPLOAD_DIR: /tmp/uploads
+      ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
       SEED_TEST_DATA: "false"
-      TEST_DB_NAME: "team1_db"
-      TEST_DATA_PATH: "/code/db/test_db.txt"
-      # C_FORCE_ROOT: "true"
-    links:
-      - "db:db"
     ports:
-      - "42000:80"
+      - "42000:8000"
     restart: "unless-stopped"
     depends_on:
-      - redis_server
+      - postgres
 
-  worker:
-    build:
-      context: .
-      dockerfile: DockerfileWorker
-    volumes:
-      - model-data:/models
-      - testdata:/code/worker/testdata
+  postgres:
+    image: postgres:16
     environment:
-      REDISSERVER: redis://redis_server:6379
-      DB_HOST: db
-      MODEL_BASE_PATH: /models
-      # C_FORCE_ROOT: "true"
-    links:
-      - "db:db"
-    deploy:
-      mode: replicated
-      replicas: 3
-    restart: "unless-stopped"
-    depends_on:
-      - redis_server
-  redis_server:
-    image: redis
-
-  flower:
-    image: mher/flower
-    command:
-      ["celery", "--broker=redis://redis_server:6379", "flower", "--port=5555"]
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: paas_dev
     ports:
-      - "5555:5555"
-    depends_on:
-      - redis_server
-
-  db:
-    image: mysql:8.0
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: safe123
-      MYSQL_DATABASE: team1_db # auto-create DB
-      MYSQL_USER: team1_user # auto-create user
-      MYSQL_PASSWORD: team1_pass
-    ports:
-      - "3306:3306"
-      - "33060:33060"
+      - "5432:5432"
     volumes:
-      - db-data:/var/lib/mysql
+      - pgdata:/var/lib/postgresql/data
+
+  # ── Full-mode services (Redis + Celery + MySQL) ───────────────────
+  # Uncomment the block below and use docker-compose.full.yml for the
+  # full local architecture (Redis, Celery workers, MySQL).
+
+  # worker:
+  #   build:
+  #     context: .
+  #     dockerfile: DockerfileWorker
+  #   volumes:
+  #     - models:/models
+  #     - uploads:/code/worker/testdata
+  #   environment:
+  #     REDISSERVER: redis://redis_server:6379
+  #     DB_HOST: db
+  #     MODEL_BASE_PATH: /models
+  #   depends_on:
+  #     - redis_server
+
+  # redis_server:
+  #   image: redis
+
+  # flower:
+  #   image: mher/flower
+  #   command: ["celery", "--broker=redis://redis_server:6379", "flower", "--port=5555"]
+  #   ports:
+  #     - "5555:5555"
+  #   depends_on:
+  #     - redis_server
+
+  # db:
+  #   image: mysql:8.0
+  #   restart: always
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: safe123
+  #     MYSQL_DATABASE: team1_db
+  #     MYSQL_USER: team1_user
+  #     MYSQL_PASSWORD: team1_pass
+  #   ports:
+  #     - "3306:3306"
+  #   volumes:
+  #     - db-data:/var/lib/mysql
 
 volumes:
-  db-data:
-  model-data:
-  testdata:
+  pgdata:
+  uploads:
+  models:
+  # db-data:
