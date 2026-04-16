@@ -4,6 +4,8 @@ End-to-end machine learning platform with a FastAPI backend, asynchronous Celery
 
 ## 🚀 Overview
 
+👉 **Live Demo:** https://predictive-analytics-as-a-service.vercel.app
+
 PAaaS (Predictive Analytics as a Service) is a production-style machine learning platform that enables users to manage datasets, train models asynchronously, and deploy predictions through a scalable backend architecture.
 
 The system mimics real-world ML infrastructure used in industry, combining API services, background workers, and a full frontend dashboard.
@@ -35,6 +37,9 @@ It demonstrates practical ML engineering beyond notebook-based workflows.
 - Improve monitoring and alerting for ML pipelines
 
 ## 🌐 Live Demo (Deployed Version)
+
+👉 **Try it here:** https://predictive-analytics-as-a-service.vercel.app  
+⚠️ First request may take 30–60 seconds due to backend cold start.
 
 A simplified version of PAaaS is deployed on Vercel (frontend) and Render (backend + PostgreSQL). It is intentionally stripped down to fit within free-tier constraints, so there are a few things worth knowing before using it.
 
