@@ -1,3 +1,6 @@
+# For the lightweight portfolio deployment (no Celery/Redis), use:
+#   pip install -r requirements.portfolio.txt
+
 [project]
 name = "fachpraktikum"
 requires-python = "~=3.13"

@@ -1,0 +1,27 @@
+# requirements.portfolio.txt
+# Dependencies for the lightweight portfolio deployment.
+# No Celery, no Redis, no MySQL/PyMySQL.
+# Use: pip install -r requirements.portfolio.txt
+#
+# Note: the full dependency set is in pyproject.toml.
+
+# Web framework
+fastapi[standard]==0.120.4
+uvicorn[standard]>=0.30
+pydantic==2.12.3
+
+# Database (PostgreSQL only)
+psycopg2-binary>=2.9
+
+# ML stack
+scikit-learn==1.5.2
+xgboost
+joblib==1.4.2
+pandas==2.2.3
+numpy==2.1.2
+shap==0.49.1
+lime==0.2.0.1
+
+# Plotting (used by explainability)
+plotly==5.24.1
+matplotlib==3.9.2
