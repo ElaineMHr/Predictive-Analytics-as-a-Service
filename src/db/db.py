@@ -684,23 +684,42 @@ def create_job(
     return job_id
 
 
-def update_job_status(job_id: str, status: str, error: Optional[str] = None) -> None:
+def update_job_status(
+    job_id: str,
+    status: str,
+    error: Optional[str] = None,
+    progress: Optional[int] = None,
+    message: Optional[str] = None,
+    result: Optional[dict] = None,
+) -> None:
     """
-    Simple status update:
-    - if status == 'running'  -> set started_at
-    - if status in ('completed', 'failed') -> set finished_at
-    - error (if given) is stored
+    Status update with optional progress (0-100), message, and result payload.
+    - status == 'running'               -> set started_at
+    - status in ('completed', 'failed') -> set finished_at
     """
-    if status == "running":
-        sql = "UPDATE jobs SET status=%s, started_at=NOW(), error=%s WHERE id=%s"
-        params = (status, error, job_id)
-    elif status in ("completed", "failed"):
-        sql = "UPDATE jobs SET status=%s, finished_at=NOW(), error=%s WHERE id=%s"
-        params = (status, error, job_id)
-    else:
-        sql = "UPDATE jobs SET status=%s, error=%s WHERE id=%s"
-        params = (status, error, job_id)
+    set_parts = ["status=%s"]
+    params: list = [status]
 
+    if status == "running":
+        set_parts.append("started_at=NOW()")
+    elif status in ("completed", "failed"):
+        set_parts.append("finished_at=NOW()")
+
+    if error is not None:
+        set_parts.append("error=%s")
+        params.append(error)
+    if progress is not None:
+        set_parts.append("progress=%s")
+        params.append(progress)
+    if message is not None:
+        set_parts.append("message=%s")
+        params.append(message)
+    if result is not None:
+        set_parts.append("result=%s")
+        params.append(_json_dump(result))
+
+    params.append(job_id)
+    sql = "UPDATE jobs SET " + ", ".join(set_parts) + " WHERE id=%s"
     with cursor() as cur:
         cur.execute(sql, params)
 
