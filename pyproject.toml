@@ -14,6 +14,7 @@ dependencies = [
   "redis",
   "mysql-connector-python",
   "pymysql>=1.1",
+  "psycopg2-binary>=2.9",
   "cryptography",
   "pandas==2.2.3",
   "numpy==2.1.2",
