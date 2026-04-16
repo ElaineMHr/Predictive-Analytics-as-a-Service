@@ -6,8 +6,9 @@ WORKDIR /code
 COPY requirements.portfolio.txt .
 RUN pip install --no-cache-dir -r requirements.portfolio.txt
 
-# Copy source — flat layout matching DockerfileApi convention
-COPY src/__init__.py         /code/__init__.py
+# Copy source — flat layout (no __init__.py at /code/ so fastapi run
+# adds /code/ itself to sys.path, making bare imports like
+# "from config import settings" resolve correctly)
 COPY src/config.py           /code/config.py
 COPY src/api/                /code/api/
 COPY src/db/                 /code/db/
