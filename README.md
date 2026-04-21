@@ -1,4 +1,4 @@
-﻿# PAaaS (Predictive Analytics as a Service)
+# PAaaS (Predictive Analytics as a Service)
 
 End-to-end machine learning platform with a FastAPI backend, asynchronous Celery workers, MySQL persistence, and a React dashboard for dataset management, model training, and prediction serving.
 
@@ -17,7 +17,7 @@ This project reflects how modern ML systems are built in production:
 - Decoupled API and training pipelines
 - Asynchronous task processing (Celery)
 - Model lifecycle management
-- Explainability integration (SHAP, LIME)
+- Explainability integration (SHAP)
 - Scalable service architecture
 
 It demonstrates practical ML engineering beyond notebook-based workflows.
@@ -104,6 +104,113 @@ flowchart LR
 6. Trigger prediction via `/predict` using CSV, URI, or JSON payload.
 7. Track async progress via `/celery/{task_id}` and live events on `/events/stream`.
 
+---
+
+## ML Pipeline
+
+### Algorithm Presets
+
+PAaaS ships with a set of algorithm presets per task type, loaded dynamically from `src/mlcore/presets/`. Each preset exports a `build_model()` function that returns a scikit-learn `Pipeline` and a metadata dict. You select a preset when triggering a training job.
+
+**Classification presets**
+
+| Preset | Algorithm |
+|---|---|
+| `auto` | Evaluates LogisticRegression, RandomForest, ExtraTrees, XGBoost via CV and picks the best |
+| `logistic_regression` | Logistic Regression |
+| `random_forest` | Random Forest Classifier |
+| `extra_trees` | Extra Trees Classifier |
+| `histogram_gradient_boosting` | HistGradientBoosting Classifier |
+| `xgboost` | XGBoost Classifier |
+
+**Regression presets**
+
+| Preset | Algorithm |
+|---|---|
+| `auto` | Evaluates LinearRegression, Ridge, RandomForest, XGBoost via CV and picks the best |
+| `linear_regression` | Linear Regression |
+| `linear_ridge_regression` | Ridge Regression |
+| `polynomial_ridge_regression` | Polynomial features + Ridge Regression |
+| `random_forest` | Random Forest Regressor |
+| `histogram_gradient_boosting` | HistGradientBoosting Regressor |
+| `xgboost` | XGBoost Regressor |
+
+The `auto` preset runs all candidate models through cross-validation and selects the best by `f1_macro` (classification) or `r2` (regression). The winning estimator is stored alongside its identity in the model metadata so you always know which algorithm was chosen.
+
+Use `GET /presets/{task}` to retrieve the available preset names for a given task at runtime.
+
+### Train Mode
+
+Controls the number of cross-validation folds used during candidate evaluation and training:
+
+| Mode | CV Folds | Use case |
+|---|---|---|
+| `fast` | 3 | Quick iteration during exploration |
+| `balanced` | 5 | Default; good accuracy/speed trade-off |
+| `accurate` | 5 | Same folds as balanced, stricter selection criteria |
+
+### Evaluation Strategy
+
+- **`cv`** — runs StratifiedKFold (classification) or KFold (regression) on the training set, then also evaluates on a holdout test split. Returns both CV mean/std and test-set metrics.
+- **`holdout`** — skips cross-validation and evaluates on the test split only. Faster, but no variance estimate.
+
+### Metrics
+
+| Task | Metrics computed |
+|---|---|
+| Classification | accuracy, precision (macro), recall (macro), f1 (macro) |
+| Regression | MAE, MSE, RMSE, R², MAPE |
+
+All metrics are stored in the model record and displayed in the dashboard.
+
+### Column Profiling
+
+When a CSV is uploaded, `mlcore/profile/profiler.py` analyses each column and infers:
+
+- **Semantic type:** `numeric`, `categorical`, `boolean`, `datetime`, or `unknown`
+- **Analysis suggestion:** `classification`, `regression`, or `none` — based on cardinality heuristics (unique-value ratio, top-3-value coverage)
+- **Exclusion reason** (if applicable): `constant`, `empty`, `id_like`, `datetime`, `unsupported_dtype`, `high_cardinality`
+
+ID-like columns — numeric sequences where nearly every value is unique — are detected automatically and excluded from feature selection. The profiler also reports per-column missing-value percentage and basic statistics (min/max/mean/std for numeric; top value + frequency for categorical).
+
+### Feature Strategy
+
+By default the trainer uses the profiler's exclusion suggestions to pick features (`"auto"`). Users can override this:
+
+- `PATCH /problem/{problem_id}/feature_strategy` — supply explicit `include` or `exclude` column lists
+- `POST /problem/{problem_id}/feature_strategy/reset` — revert to `auto`
+
+### Explainability
+
+After training, the system computes SHAP values using `TreeExplainer`:
+
+- **Background samples:** up to 200 rows sampled from training data
+- **Explanation samples:** up to 500 rows sampled from the test set
+- **Global importance:** mean absolute SHAP values per feature, with quantile distributions (10th, 25th, 50th, 75th, 90th percentile)
+- **Feature tracking:** post-OneHotEncoding feature names are mapped back to their original column names for display in the dashboard
+
+> **Note:** LIME is a listed dependency but is not currently integrated into the explainability pipeline. Only SHAP is used.
+
+---
+
+## Deployment Modes
+
+PAaaS supports two runtime modes, controlled by the `APP_MODE` environment variable. This is the primary switch between the full local/production setup and the lightweight deployed version.
+
+| | Full mode | Portfolio mode |
+|---|---|---|
+| `APP_MODE` | `full` | `portfolio` |
+| Database | MySQL 8 | PostgreSQL (via `DATABASE_URL`) |
+| Task queue | Celery + Redis (3 workers by default) | None |
+| Training execution | Async via Celery workers | Sync in FastAPI thread pool (max 2) |
+| Progress updates | SSE via Redis pub/sub | HTTP polling every 2 s |
+| CSV storage | Local filesystem (`UPLOAD_DIR`) | Stored as text in the database |
+| Model artifacts | Shared Docker volume (`/models`) | Ephemeral (`/tmp/models`) |
+
+The live demo runs in portfolio mode. See the [Live Demo](#-live-demo-deployed-version) section above for the practical implications.
+
+---
+
 ## Tech Stack
 
 | Layer      | Technologies                                                 |
@@ -111,8 +218,8 @@ flowchart LR
 | Frontend   | React 19, TypeScript, Vite, Tailwind CSS, Radix UI, Recharts |
 | API        | FastAPI, Pydantic                                            |
 | Async Jobs | Celery, Redis, Flower                                        |
-| Data/DB    | MySQL 8, PyMySQL                                             |
-| ML         | scikit-learn, XGBoost, SHAP, LIME, pandas, numpy             |
+| Data/DB    | MySQL 8 (full) / PostgreSQL (portfolio), PyMySQL / psycopg2  |
+| ML         | scikit-learn, XGBoost, SHAP, pandas, numpy                   |
 | Packaging  | `pyproject.toml`, editable installs                          |
 | CI         | GitHub Actions (`pytest`, Docker image build)                |
 
@@ -140,7 +247,14 @@ flowchart LR
 |  |- celery_handler/        # Celery app config
 |  |- db/                    # MySQL schema + DB access layer
 |  |- mlcore/                # Training, prediction, profiling, explainability
-|- docs/                     # System diagrams
+|  |  |- presets/            # Algorithm presets (classification/ + regression/)
+|  |  |- profile/            # Column profiler and schema inference
+|  |  |- train/              # Training orchestration
+|  |  |- predict/            # Prediction and input validation
+|  |  |- metrics/            # Test-set and cross-validation metrics
+|  |  |- explain/            # SHAP explainability
+|  |  |- io/                 # CSV I/O, artifact save/load, preset loader
+|- docs/                     # System diagrams and screenshots
 |- testdata/                 # Demo/test CSVs and fixtures
 ```
 
@@ -156,7 +270,7 @@ flowchart LR
 docker compose up -d --build
 ```
 
-Optional: run 3 workers explicitly.
+The Compose file starts **3 Celery worker replicas by default**. To override the count explicitly:
 
 ```bash
 docker compose up -d --build --scale worker=3
@@ -188,6 +302,28 @@ Default database credentials (from `docker-compose.yml`):
 - User: `team1_user`
 - Password: `team1_pass`
 - Root password: `safe123`
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Services | Default | Purpose |
+|---|---|---|---|
+| `APP_MODE` | api, worker | `full` | Runtime mode: `full` (MySQL + Celery) or `portfolio` (PostgreSQL, sync training) |
+| `PYTHONPATH` | local dev | — | Must be set to `src` for all Python commands |
+| `VITE_API_URL` | frontend | `http://localhost:42000` | Backend URL |
+| `VITE_PROGRESS_MODE` | frontend | `sse` | `sse` for live events or `poll` for HTTP polling (portfolio) |
+| `REDISSERVER` | api, worker | — | Redis connection URL (full mode only) |
+| `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASS` | api, worker | — | MySQL connection parameters (full mode) |
+| `DATABASE_URL` | api, worker | — | PostgreSQL connection string (portfolio mode) |
+| `MODEL_BASE_PATH` | api, worker | `/models` | Where `.joblib` model artifacts are written |
+| `UPLOAD_DIR` | api | — | Where uploaded CSVs are stored on disk (full mode) |
+| `ALLOWED_ORIGINS` | api | — | Comma-separated CORS origin allowlist |
+| `SEED_TEST_DATA` | api | — | Set to `true` to auto-seed demo data on startup |
+| `DELAY_DB_CONN_ON_STARTUP` | api | `0` | Seconds to wait before DB initialisation (prevents Docker startup race conditions) |
+| `PYTEST_CI_MODE` | tests | — | Set to `True` in CI to skip smoke tests that require a live database |
+
+The database schema is applied automatically on API startup — no manual migration step is needed.
 
 ## Local Development
 
@@ -247,7 +383,7 @@ Configure API URL if needed:
 VITE_API_URL=http://localhost:42000
 ```
 
-## API Surface (Selected)
+## API Surface
 
 ### Dataset lifecycle
 
@@ -255,25 +391,36 @@ VITE_API_URL=http://localhost:42000
 - `GET /datasets`
 - `POST /datasetVersion` (multipart CSV upload)
 - `GET /datasetVersion/{id}`
+- `GET /datasetVersionsAll` — all versions with dataset info joined
+- `PATCH /datasetVersion/{version}/exclude_suggestions` — override profiler column exclusions
+- `POST /datasetVersion/{version}/profile` — trigger manual profile recalculation
+- `GET /datasetVersionProblems/{dataset_version_id}` — problems linked to a version
 
 ### ML lifecycle
 
 - `POST /problem`
+- `GET /mlProblemsAll`
 - `POST /train`
 - `GET /problemModels/{problem_id}`
+- `GET /modelsAll`
 - `PATCH /model/{model_id}/set_production`
+- `PATCH /problem/{problem_id}/feature_strategy` — set custom include/exclude column lists
+- `POST /problem/{problem_id}/feature_strategy/reset` — revert feature strategy to `auto`
+- `GET /presets/{task}` — list available algorithm presets for a task type
 
 ### Prediction lifecycle
 
-- `POST /predict`
+- `POST /predict` (accepts CSV upload, URI, or JSON payload)
 - `GET /modelPredictions/{model_id}`
 - `GET /problemPredictions/{problem_id}`
+- `GET /predictionsAll`
 
 ### Monitoring and dashboard
 
 - `GET /celery/{task_id}`
 - `GET /events/stream` (SSE)
 - `GET /dashboard/stats`
+- `GET /health` — returns service status, mode, database, and storage info
 
 ## Testing
 
@@ -300,6 +447,8 @@ python -m pytest -q src/db/test_smoke.py -s
 - `jobs` API endpoints exist but are currently placeholders.
 - Frontend jobs page is scaffolded and not fully wired.
 - Role-based auth/permission checks are not yet implemented.
+- LIME is a listed dependency but is not integrated — SHAP is the only active explainability backend.
+- `timeseries` is a valid task type in the database schema but has no corresponding ML pipeline implementation; only `classification` and `regression` are functional.
 
 ## License
 
